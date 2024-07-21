@@ -3,7 +3,7 @@ import Shipping from "../Module/Address.Module.js";
 
 export async function createInvoices(body) {
   try {
-    const { items, payment, subtotal, invoice_nr } = body;
+    const { items, payment, subtotal, invoice_nr, paid } = body;
     const { name, address, city, state, country } = body;
 
     const newShipping = new Shipping({
@@ -15,6 +15,7 @@ export async function createInvoices(body) {
       payment,
       subtotal,
       invoice_nr,
+      paid,
     });
 
     const savedShipping = await newShipping.save();

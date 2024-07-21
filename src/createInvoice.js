@@ -3,12 +3,17 @@ import PDFDocument from "pdfkit";
 
 function createInvoice(invoice, path) {
   return new Promise((resolve, reject) => {
+    let subtotal = 0;
+    invoice.items.forEach((element) => {
+      subtotal += element.amount * element.quantity;
+    });
+
     let doc = new PDFDocument({ size: "A4", margin: 50 });
     let pdfBuffer = [];
 
     generateHeader(doc);
-    generateCustomerInformation(doc, invoice);
-    generateInvoiceTable(doc, invoice);
+    generateCustomerInformation(doc, invoice, subtotal);
+    generateInvoiceTable(doc, invoice, subtotal);
     generateFooter(doc);
     doc.on("data", (chunk) => {
       pdfBuffer.push(chunk);
@@ -35,7 +40,7 @@ function generateHeader(doc) {
     .moveDown();
 }
 
-function generateCustomerInformation(doc, invoice) {
+function generateCustomerInformation(doc, invoice, subtotal) {
   doc.fillColor("#444444").fontSize(20).text("Invoice", 50, 160);
 
   generateHr(doc, 185);
@@ -52,7 +57,7 @@ function generateCustomerInformation(doc, invoice) {
     .text(formatDate(new Date()), 150, customerInformationTop + 15)
     .text("Balance Due:", 50, customerInformationTop + 30)
     .text(
-      formatCurrency(invoice.subtotal - invoice.paid),
+      formatCurrency(subtotal - parseInt(invoice.paid)),
       150,
       customerInformationTop + 30
     )
@@ -71,7 +76,7 @@ function generateCustomerInformation(doc, invoice) {
   generateHr(doc, 252);
 }
 
-function generateInvoiceTable(doc, invoice) {
+function generateInvoiceTable(doc, invoice, subtotal) {
   let i;
   const invoiceTableTop = 330;
 
@@ -96,9 +101,9 @@ function generateInvoiceTable(doc, invoice) {
       position,
       item.item,
       item.description,
-      formatCurrency(item.amount / item.quantity),
+      formatCurrency(item.amount),
       item.quantity,
-      formatCurrency(item.amount)
+      formatCurrency(item.amount * item.quantity)
     );
 
     generateHr(doc, position + 20);
@@ -112,7 +117,7 @@ function generateInvoiceTable(doc, invoice) {
     "",
     "Subtotal",
     "",
-    formatCurrency(invoice.subtotal)
+    formatCurrency(subtotal)
   );
 
   const paidToDatePosition = subtotalPosition + 20;
@@ -135,7 +140,7 @@ function generateInvoiceTable(doc, invoice) {
     "",
     "Balance Due",
     "",
-    formatCurrency(invoice.subtotal - invoice.paid)
+    formatCurrency(subtotal - invoice.paid)
   );
   doc.font("Helvetica");
 }

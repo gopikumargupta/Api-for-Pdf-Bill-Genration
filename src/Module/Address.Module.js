@@ -75,6 +75,10 @@ const shippingSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
+  paid: {
+    type: Number,
+    default: 0,
+  },
 });
 
 // Create a Mongoose model
