@@ -1,16 +1,25 @@
-const fs = require("fs");
-const PDFDocument = require("pdfkit");
+import fs from "fs";
+import PDFDocument from "pdfkit";
 
 function createInvoice(invoice, path) {
-  let doc = new PDFDocument({ size: "A4", margin: 50 });
+  return new Promise((resolve, reject) => {
+    let doc = new PDFDocument({ size: "A4", margin: 50 });
+    let pdfBuffer = [];
 
-  generateHeader(doc);
-  generateCustomerInformation(doc, invoice);
-  generateInvoiceTable(doc, invoice);
-  generateFooter(doc);
+    generateHeader(doc);
+    generateCustomerInformation(doc, invoice);
+    generateInvoiceTable(doc, invoice);
+    generateFooter(doc);
+    doc.on("data", (chunk) => {
+      pdfBuffer.push(chunk);
+    });
 
-  doc.end();
-  doc.pipe(fs.createWriteStream(path));
+    doc.on("end", () => {
+      resolve(Buffer.concat(pdfBuffer));
+    });
+
+    doc.end();
+  });
 }
 
 function generateHeader(doc) {
@@ -18,19 +27,16 @@ function generateHeader(doc) {
     .image("logo.png", 50, 45, { width: 50 })
     .fillColor("#444444")
     .fontSize(20)
-    .text("ACME Inc.", 110, 57)
+    .text("DEMO INVOICE", 110, 57)
     .fontSize(10)
-    .text("ACME Inc.", 200, 50, { align: "right" })
-    .text("123 Main Street", 200, 65, { align: "right" })
-    .text("New York, NY, 10025", 200, 80, { align: "right" })
+    .text("DEMO INDUSTRIES", 200, 50, { align: "right" })
+    .text("Demo Street  Demo City", 200, 65, { align: "right" })
+    .text("Demo India, 70007", 200, 80, { align: "right" })
     .moveDown();
 }
 
 function generateCustomerInformation(doc, invoice) {
-  doc
-    .fillColor("#444444")
-    .fontSize(20)
-    .text("Invoice", 50, 160);
+  doc.fillColor("#444444").fontSize(20).text("Invoice", 50, 160);
 
   generateHr(doc, 185);
 
@@ -40,7 +46,7 @@ function generateCustomerInformation(doc, invoice) {
     .fontSize(10)
     .text("Invoice Number:", 50, customerInformationTop)
     .font("Helvetica-Bold")
-    .text(invoice.invoice_nr, 150, customerInformationTop)
+    .text(`${invoice.invoice_nr}`, 150, customerInformationTop)
     .font("Helvetica")
     .text("Invoice Date:", 50, customerInformationTop + 15)
     .text(formatDate(new Date()), 150, customerInformationTop + 15)
@@ -52,15 +58,11 @@ function generateCustomerInformation(doc, invoice) {
     )
 
     .font("Helvetica-Bold")
-    .text(invoice.shipping.name, 300, customerInformationTop)
+    .text(invoice.name, 300, customerInformationTop)
     .font("Helvetica")
-    .text(invoice.shipping.address, 300, customerInformationTop + 15)
+    .text(invoice.address, 300, customerInformationTop + 15)
     .text(
-      invoice.shipping.city +
-        ", " +
-        invoice.shipping.state +
-        ", " +
-        invoice.shipping.country,
+      invoice.city + ", " + invoice.state + ", " + invoice.country,
       300,
       customerInformationTop + 30
     )
@@ -168,12 +170,7 @@ function generateTableRow(
 }
 
 function generateHr(doc, y) {
-  doc
-    .strokeColor("#aaaaaa")
-    .lineWidth(1)
-    .moveTo(50, y)
-    .lineTo(550, y)
-    .stroke();
+  doc.strokeColor("#aaaaaa").lineWidth(1).moveTo(50, y).lineTo(550, y).stroke();
 }
 
 function formatCurrency(cents) {
@@ -188,6 +185,4 @@ function formatDate(date) {
   return year + "/" + month + "/" + day;
 }
 
-module.exports = {
-  createInvoice
-};
+export default createInvoice;
